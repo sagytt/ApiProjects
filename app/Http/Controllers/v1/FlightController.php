@@ -21,7 +21,8 @@ class FlightController extends Controller
      */
     public function index()
     {
-        $data = $this->flights->getFlights();
+        $parameters = request()->input(); // Taking all parameters from url given. ?include =
+        $data = $this->flights->getFlights($parameters);
         return  response()->json($data);
     }
 
