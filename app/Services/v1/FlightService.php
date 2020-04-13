@@ -4,7 +4,7 @@ namespace App\Services\v1;
 
 
 use App\Flight;
-
+use App\Airport;
 class FlightService{
     protected $supportedIncludes= [
         'arrivalAirport' => 'arrival',
@@ -19,7 +19,7 @@ class FlightService{
     public function getFlights($parameters)
     {
         if (empty($parameters)){
-        return $this->filterFlights(Flight::all());
+            return $this->filterFlights(Flight::all());
         }
 
         $withKeys = $this->getWithKeys($parameters);
@@ -27,6 +27,30 @@ class FlightService{
         $flights =  Flight::with($withKeys)->where($whereClauses)->get();
 
         return $this->filterFlights($flights, $withKeys);
+    }
+
+    //POST METHOD
+    public function createFlight($req){
+        $arrivalAirport = $req->input('arrival.iataCode'); //getting input of the iataCode from Airport table
+        $departureAirport = $req->input('departure.iataCode');
+
+        $airports = Airport::whereIn('iataCode', [$arrivalAirport, $departureAirport])->get();
+        $codes = [];
+
+        foreach ($airports as $port){
+            $codes[$port->iataCode] = $port->id;
+        }
+
+        $flight = new Flight();
+        $flight->flightNumber = $req->input('flightNumber');
+        $flight->status = $req->input('status');
+        $flight->arrivalAirport_id = $codes[$arrivalAirport];
+        $flight->arrivalAirportDateTime = $req->input('arrival.datetime');
+        $flight->departureAirport_id = $codes[$departureAirport];
+        $flight->departureAirportDateTime = $req->input('departure.datetime');
+
+        $flight->save();
+        return $this->filterFlights([$flight]);
     }
 
     public function filterFlights($flights, $keys = []){
